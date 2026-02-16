@@ -5,7 +5,8 @@ import time
 from collections import defaultdict
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import CommandStart
-from aiogram.types import FSInputFile, InlineKeyboardBuilder
+from aiogram.types import FSInputFile
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.middleware import BaseMiddleware
 import yt_dlp
 from asyncio import to_thread
@@ -174,3 +175,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
