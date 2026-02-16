@@ -145,21 +145,36 @@ async def handle_link(message: types.Message):
         os.remove(filename)
         logging.info("Видео успешно отправлено")
     except Exception as e:
-        logging.error(f"Ошибка скачивания видео: {type(e).__name__}")
+        logging.error(f"Ошибка скачивания видео: {type(e).__name__} - {str(e)}")
         await message.answer("Не удалось скачать видео 😔 Проверь ссылку и попробуй снова.")
 
 async def download_video(url: str):
     ydl_opts = {
-        'format': 'best[height<=720][ext=mp4]/best[ext=mp4]/best',
+        'format': 'bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720][ext=mp4]/best[ext=mp4]/best',
         'outtmpl': 'downloads/%(id)s.%(ext)s',
         'noplaylist': True,
         'quiet': True,
-        'no_warnings': True,
+        'no_warnings': False,
+        'ignoreerrors': True,
+        'no_check_certificate': True,
+        'geo_bypass': True,
+        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'referer': 'https://www.youtube.com/',
+        'extractor_args': {
+            'youtube': {
+                'player_client': 'android,web',  # Обход бот-детекции YouTube
+                'skip': 'hls,dash'  # Пропуск проблемных форматов
+            }
+        },
     }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = await to_thread(ydl.extract_info, url, download=True)
-        filename = ydl.prepare_filename(info)
-        return filename
+        try:
+            info = await to_thread(ydl.extract_info, url, download=True)
+            filename = ydl.prepare_filename(info)
+            return filename
+        except Exception as e:
+            logging.error(f"yt-dlp ошибка для {url}: {str(e)}")
+            raise
 
 async def main():
     await asyncio.gather(
@@ -169,3 +184,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
