@@ -7,7 +7,6 @@ from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import CommandStart
 from aiogram.types import FSInputFile
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from aiogram.middleware import BaseMiddleware
 import yt_dlp
 from asyncio import to_thread
 from aiohttp import web
@@ -35,7 +34,7 @@ ALLOWED_DOMAINS = [
     "youtube.com", "youtu.be", "m.youtube.com"
 ]
 
-class ThrottlingMiddleware(BaseMiddleware):
+class ThrottlingMiddleware:
     def __init__(self):
         self.user_limits = defaultdict(list)
         self.download_times = defaultdict(float)
@@ -77,7 +76,7 @@ async def web_server():
 async def check_subscription(user_id: int) -> bool:
     try:
         member = await bot.get_chat_member(CHANNEL_ID, user_id)
-        return member.status in ["member", "administrator", " Timed out"]
+        return member.status in ["member", "administrator", "creator"]
     except Exception as e:
         logging.error(f"Ошибка проверки подписки: {type(e).__name__}")
         return False
@@ -131,7 +130,7 @@ async def handle_link(message: types.Message):
     logging.info("Получена ссылка на видео")
 
     if not any(domain in url for domain in ALLOWED_DOMAINS):
-        await message.answer("Поддерживаются только ссылки из TikTok, Instagram Reels и YouTube Shorts 😔")
+        await message.answer("Поддерживаются только ссылки из TikTok, Instagram Reels или YouTube Shorts 😔")
         return
 
     await message.answer("Скачиваю видео... Подожди ⏳")
@@ -154,17 +153,12 @@ async def download_video(url: str):
         'format': 'best[height<=720][ext=mp4]/best[ext=mp4]/best',
         'outtmpl': 'downloads/%(id)s.%(ext)s',
         'noplaylist': True,
-        'merge_output_format': 'mp4',
         'quiet': True,
         'no_warnings': True,
     }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = await to_thread(ydl.extract_info, url, download=True)
         filename = ydl.prepare_filename(info)
-        if not filename.endswith('.mp4'):
-            mp4_filename = filename.rsplit('.', 1)[0] + '.mp4'
-            if os.path.exists(mp4_filename):
-                filename = mp4_filename
         return filename
 
 async def main():
@@ -175,4 +169,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-
